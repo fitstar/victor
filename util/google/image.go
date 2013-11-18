@@ -41,6 +41,9 @@ func ImageSearch(term string, gifOnly bool) (string, error) {
 
 	resp, err := http.Get(search.String())
 
+	if resp.StatusCode != 200 {
+		return "", fmt.Errorf("Bad status from google: %v", resp.Status)
+	}
 	if err != nil {
 		return "", err
 	}

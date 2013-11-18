@@ -39,7 +39,7 @@ func defaults(robot *Robot) {
 		result, err := google.ImageSearch(m.Params()[1], gifOnly)
 
 		if err != nil {
-			m.Room().Say("There was error making the request.")
+			m.Room().Say(fmt.Sprintf("There was error making the request: %v", err))
 			return
 		}
 
