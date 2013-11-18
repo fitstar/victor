@@ -7,45 +7,50 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 var (
-	brain   adapter.Brain
-	client  *campfire.Client
-	roomIds = []int{}
+	brain    adapter.Brain
+	client   *campfire.Client
+	roomIds  = []int{}
+	initOnce sync.Once
 )
 
 func init() {
 	adapter.Register("campfire", func(b adapter.Brain) adapter.Adapter {
-		account := os.Getenv("VICTOR_CAMPFIRE_ACCOUNT")
-		token := os.Getenv("VICTOR_CAMPFIRE_TOKEN")
-		roomList := os.Getenv("VICTOR_CAMPFIRE_ROOMS")
-
-		if account == "" || token == "" || roomList == "" {
-			log.Println("The following environment variables are required:")
-			log.Println("VICTOR_CAMPFIRE_ACCOUNT, VICTOR_CAMPFIRE_TOKEN, VICTOR_CAMPFIRE_ROOMS")
-			os.Exit(1)
-		}
-
 		brain = b
-		client = campfire.NewClient(account, token)
-		roomIdStrings := strings.Split(roomList, ",")
-
-		for _, id := range roomIdStrings {
-			j, err := strconv.Atoi(id)
-
-			if err != nil {
-				log.Fatalf("room is not numeric: %s\n", id)
-			}
-
-			roomIds = append(roomIds, j)
-		}
-
 		return adapter.AdapterFunc(Listen)
 	})
 }
 
+func doOnce() {
+	account := os.Getenv("VICTOR_CAMPFIRE_ACCOUNT")
+	token := os.Getenv("VICTOR_CAMPFIRE_TOKEN")
+	roomList := os.Getenv("VICTOR_CAMPFIRE_ROOMS")
+
+	if account == "" || token == "" || roomList == "" {
+		log.Println("The following environment variables are required:")
+		log.Println("VICTOR_CAMPFIRE_ACCOUNT, VICTOR_CAMPFIRE_TOKEN, VICTOR_CAMPFIRE_ROOMS")
+		os.Exit(1)
+	}
+
+	client = campfire.NewClient(account, token)
+	roomIdStrings := strings.Split(roomList, ",")
+
+	for _, id := range roomIdStrings {
+		j, err := strconv.Atoi(id)
+
+		if err != nil {
+			log.Fatalf("room is not numeric: %s\n", id)
+		}
+
+		roomIds = append(roomIds, j)
+	}
+}
+
 func Listen(messages chan adapter.Message) (err error) {
+	initOnce.Do(doOnce)
 	cache := brain.Cache()
 	me, err := client.Me()
 
