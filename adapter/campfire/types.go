@@ -31,7 +31,11 @@ func (m *Message) Room() adapter.Room {
 }
 
 func (m *Message) Reply(text string) error {
-	return m.Room().Say(fmt.Sprintf("%s: %s", m.User().Name(), text))
+	name := m.User().Name()
+	if name == "Harrison Shih" {
+		name = "Yonkers"
+	}
+	return m.Room().Say(fmt.Sprintf("%s: %s", name, text))
 }
 
 func (m *Message) SetParams(v []string) {
